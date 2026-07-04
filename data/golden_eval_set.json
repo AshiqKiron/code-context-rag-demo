@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "query": "How do I handle admin logins?",
+        "expected_keywords": ["AuthService", "admin", "token"],
+        "difficulty": "medium"
+    },
+    {
+        "id": 2,
+        "query": "What currencies are supported for payments?",
+        "expected_keywords": ["USD", "PaymentService"],
+        "difficulty": "easy"
+    }
+]
