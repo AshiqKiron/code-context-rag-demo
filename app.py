@@ -1,11 +1,23 @@
+import sys
+import os
 import streamlit as st
 import time
-from src.rag_engine import initialize_rag, get_relevant_context
 
-# --- Page Config ---
+# --- PATH FIX FOR STREAMLIT CLOUD ---
+# This ensures Python can find the 'src' and 'data' folders
+sys.path.append(os.path.dirname(__file__))
+
+# --- IMPORTS ---
+try:
+    from src.rag_engine import initialize_rag, get_relevant_context
+except ImportError:
+    st.error("Could not import RAG engine. Check if 'src' folder exists.")
+    st.stop()
+
+# --- PAGE CONFIG ---
 st.set_page_config(page_title="CodeContext-RAG", page_icon="🧠", layout="wide")
 
-# --- CSS Styling ---
+# --- CSS STYLING ---
 st.markdown("""
     <style>
     .main-header {font-size: 2.5rem; font-weight: bold; color: #FF4B4B;}
@@ -13,18 +25,25 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Initialize RAG ---
+# --- INITIALIZE RAG ---
 @st.cache_resource
 def load_db():
-    return initialize_rag()
+    try:
+        return initialize_rag()
+    except Exception as e:
+        st.error(f"Error loading RAG system: {e}")
+        return None
 
 db = load_db()
 
-# --- UI Layout ---
+# --- UI LAYOUT ---
 st.markdown('<p class="main-header">🧠 CodeContext-RAG Simulator</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">Turning Generic AI into a Product Specialist using RAG & Eval Systems</p>', unsafe_allow_html=True)
 
 st.divider()
+
+if db is None:
+    st.stop()
 
 col1, col2 = st.columns([1, 1])
 
@@ -37,8 +56,11 @@ with col1:
     )
     
     if user_query:
-        context = get_relevant_context(db, user_query)
-        st.code(context, language="python", caption="Retrieved Context (RAG)")
+        try:
+            context = get_relevant_context(db, user_query)
+            st.code(context, language="python", caption="Retrieved Context (RAG)")
+        except Exception as e:
+            st.error(f"Error retrieving context: {e}")
     else:
         st.info("Enter a query to see how the system retrieves product context...")
 
@@ -52,7 +74,7 @@ with col2:
         if st.button("Generate Optimized Code", type="primary"):
             if user_query:
                 with st.spinner("Retrieving context & generating..."):
-                    time.sleep(1) # Simulate processing time
+                    time.sleep(1) 
                     retrieved_code = get_relevant_context(db, user_query)
                     st.markdown("**AI Response:**")
                     st.code(f"# Based on retrieved context:\n{retrieved_code}\n\n# Final Implementation:\ndef solve_user_request():\n    # Uses the specific rules from AuthService\n    pass", language="python")
@@ -70,7 +92,7 @@ with col2:
             else:
                 st.warning("Please enter a query first.")
 
-# --- Evaluation Metrics Section ---
+# --- EVALUATION METRICS SECTION ---
 st.divider()
 st.header("📊 Evaluation System Results")
 st.caption("Measured against a Golden Dataset of 50 domain-specific queries.")
@@ -87,4 +109,4 @@ with col_b:
 
 with col_c:
     st.metric(label="Syntax Errors", value="1", delta="-11 errors", delta_color="inverse")
-    st.progress(0.02) # Visual representation of low errors
+    st.progress(0.02)
