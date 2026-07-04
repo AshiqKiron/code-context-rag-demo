@@ -1,8 +1,9 @@
 import streamlit as st
 import time
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
+# Updated imports for latest LangChain versions
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="CodeContext-RAG", page_icon="🧠", layout="wide")
@@ -39,9 +40,13 @@ class PaymentService:
 def initialize_rag():
     """Initializes the Vector Store with our product code."""
     try:
+        # Using the updated HuggingFaceEmbeddings import
         embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        
+        # Using the updated TextSplitter import
         text_splitter = CharacterTextSplitter(chunk_size=200, chunk_overlap=20)
         texts = text_splitter.split_text(PRODUCT_CODEBASE)
+        
         db = FAISS.from_texts(texts, embeddings)
         return db
     except Exception as e:
