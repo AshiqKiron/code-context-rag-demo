@@ -31,23 +31,35 @@ class PaymentService:
         return self.gateway.charge(amount)
 """
 
-# --- 2. RAG ENGINE LOGIC ---
+# --- 2. RAG ENGINE LOGIC (Using FastEmbed for Memory Safety) ---
 @st.cache_resource
 def initialize_rag():
     """Initializes the Vector Store with our product code."""
     try:
         from langchain_text_splitters import CharacterTextSplitter
-        from langchain_community.embeddings import HuggingFaceEmbeddings
         from langchain_community.vectorstores import FAISS
+        from fastembed import TextEmbedding
         
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        # Initialize lightweight embedding model
+        embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+        
         text_splitter = CharacterTextSplitter(chunk_size=200, chunk_overlap=20)
         texts = text_splitter.split_text(PRODUCT_CODEBASE)
         
-        db = FAISS.from_texts(texts, embeddings)
+        # Generate embeddings manually for FAISS compatibility
+        embeddings_list = list(embedding_model.embed(texts))
+        
+        db = FAISS.from_texts(texts, embedding=embedding_model, metadatas=None)
+        # Note: FastEmbed integrates directly with LangChain via Embeddings wrapper
+        # For simplicity in this demo, we use the direct integration
+        from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+        fe_embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+        db = FAISS.from_texts(texts, fe_embeddings)
+        
         return db
     except Exception as e:
         st.error(f"Failed to initialize RAG: {e}")
+        st.exception(e) # Shows full traceback in UI for debugging
         return None
 
 def get_relevant_context(db, query):
@@ -62,7 +74,7 @@ db = initialize_rag()
 
 # --- UI LAYOUT ---
 if db is not None:
-    st.markdown('<p class="main-header">🧠 CodeContext-RAG Simulator</p>', unsafe_allow_html=True)
+    st.markdown('<p class="main-header"> CodeContext-RAG Simulator</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Turning Generic AI into a Product Specialist using RAG & Eval Systems</p>', unsafe_allow_html=True)
 
     st.divider()
@@ -80,7 +92,6 @@ if db is not None:
         if user_query:
             context = get_relevant_context(db, user_query)
             if context:
-                # FIXED: Removed 'caption' parameter which caused TypeError
                 st.markdown("**Retrieved Context (RAG):**")
                 st.code(context, language="python")
             else:
@@ -136,4 +147,4 @@ if db is not None:
         st.progress(0.02)
 
 else:
-    st.error("RAG System failed to load. Please check logs.")
+    st.error("RAG System failed to load. Check logs above for details.")
