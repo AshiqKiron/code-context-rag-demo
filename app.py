@@ -1,12 +1,8 @@
 import streamlit as st
 import time
-# FIXED IMPORTS for modern LangChain
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="CodeContext-RAG", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="CodeContext-RAG", page_icon="", layout="wide")
 
 # --- CSS STYLING ---
 st.markdown("""
@@ -40,9 +36,11 @@ class PaymentService:
 def initialize_rag():
     """Initializes the Vector Store with our product code."""
     try:
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        from langchain_text_splitters import CharacterTextSplitter
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from langchain_community.vectorstores import FAISS
         
-        # Using the new import location
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         text_splitter = CharacterTextSplitter(chunk_size=200, chunk_overlap=20)
         texts = text_splitter.split_text(PRODUCT_CODEBASE)
         
@@ -82,7 +80,9 @@ if db is not None:
         if user_query:
             context = get_relevant_context(db, user_query)
             if context:
-                st.code(context, language="python", caption="Retrieved Context (RAG)")
+                # FIXED: Removed 'caption' parameter which caused TypeError
+                st.markdown("**Retrieved Context (RAG):**")
+                st.code(context, language="python")
             else:
                 st.warning("No relevant context found in the codebase.")
         else:
